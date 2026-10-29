@@ -27,4 +27,8 @@ rows = con.execute("""
 out = "Price change after a funding payment, by the rate paid (per interval, usually 8h), coins with $1M traded in the prior day:\n\n"
 out += table([(f, n, pct(a), pct(b), pct(c), pct(d), f"{w:.0%}", pct(e), pct(g)) for f, n, a, b, c, d, w, e, g in rows], ["funding", "n", "8h avg", "8h med", "24h avg", "24h med", "24h up", "72h avg", "72h med"])
 out += f"\n\n{time.time() - t0:.0f}s."
+import json
+keys = {"funding >= 0.3% (longs pay)": "high", "0.1% to 0.3%": "elevated", "normal": "normal", "-0.05% to -0.2% (shorts pay)": "negative", "<= -0.2%": "very_negative"}
+with open(os.path.join(os.path.dirname(__file__), "..", "results", "funding.json"), "w") as f:
+    json.dump({keys[r[0]]: {"n": r[1], "median_8h": round(r[3], 4), "median_24h": round(r[5], 4), "up_24h": round(r[6], 3), "median_72h": round(r[8], 4)} for r in rows}, f, indent=1, sort_keys=True)
 write("funding", "Extreme funding rates and what follows (Binance USDT-M perps)", out)
