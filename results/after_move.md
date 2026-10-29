@@ -59,4 +59,4 @@ Buying the dip after a down move of 5% or more, by year:
 
 Base rate, any coin any 15-minute bar (a tenth of the coins): 4h median -0.3%, average +3.6% net of costs.
 
-32s on 723 coins.
+39s on 723 coins.
