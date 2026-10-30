@@ -10,4 +10,4 @@ Price change after a funding payment, by the rate paid (per interval, usually 8h
 | -0.05% to -0.2% (shorts pay) | 69172   | -0.0%  | -0.4%  | -0.1%   | -0.9%   | 43%    | -0.6%   | -2.0%   |
 | <= -0.2%                     | 24019   | -1.0%  | -1.3%  | -2.1%   | -3.4%   | 34%    | -3.3%   | -6.1%   |
 
-8s.
+11s.
