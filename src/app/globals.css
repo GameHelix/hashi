@@ -1,0 +1,927 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: #070610;
+  --foreground: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(34, 211, 238, 0.12), transparent 60%),
+    radial-gradient(ellipse at 50% 110%, rgba(168, 85, 247, 0.1), transparent 60%),
+    var(--background);
+  color: var(--foreground);
+  font-family: 'Share Tech Mono', ui-monospace, monospace;
+  -webkit-font-smoothing: antialiased;
+  /* The board fits one screen, but the rules dialog can overflow a short
+     viewport — allow vertical scroll, never horizontal. */
+  overflow-x: hidden;
+}
+
+/* Faint CRT scanlines, tinted to the background rather than pure black. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(7, 6, 16, 0.35) 2px,
+    rgba(7, 6, 16, 0.35) 3px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ------------------------------------------------------------------ hashi */
+
+.hs-app {
+  --hs-cyan: #22d3ee;
+  --hs-purple: #a855f7;
+  --hs-pink: #f0abfc;
+  --hs-danger: #fb7185;
+  --hs-good: #34d399;
+  --hs-warn: #fbbf24;
+  /* Height taken by everything that is not the board (HUD, status line,
+     controls, footer, gaps); grows where the keyboard help line shows. */
+  --chrome: 18.75rem;
+  /* One length drives the board and every row aligned to it, so the layout
+     can never disagree with itself at any viewport width. The board is square
+     and takes whatever the screen leaves after the HUD and controls. */
+  --board: clamp(
+    16rem,
+    min(calc(100vw - 2rem), calc(100svh - var(--chrome))),
+    38rem
+  );
+  min-height: 100svh;
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: clamp(0.75rem, 2.6vh, 1.6rem) max(1rem, env(safe-area-inset-right))
+    calc(1rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Centre the column on tall screens; when content is taller than the
+     viewport the container simply grows, so nothing is clipped. */
+  justify-content: center;
+  gap: clamp(0.55rem, 1.8vh, 1rem);
+}
+
+.hs-title {
+  font-size: clamp(1.6rem, 7vw, 2.45rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f0fdff;
+  text-shadow:
+    0 0 10px rgba(34, 211, 238, 0.55),
+    0 0 26px rgba(168, 85, 247, 0.35);
+  text-align: center;
+}
+
+.hs-subtitle {
+  color: rgba(148, 163, 184, 0.85);
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+  text-align: center;
+  max-width: 34rem;
+}
+
+/* ---- play screen ---- */
+
+.hs-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: inherit;
+  width: 100%;
+}
+
+/* ---- HUD + status ---- */
+
+.hs-hud {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+  width: 100%;
+  max-width: var(--board);
+}
+
+.hs-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-width: 0;
+  padding: 0.4rem 0.25rem;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 0.5rem;
+}
+
+.hs-stat-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.hs-stat-value {
+  /* A fixed line box keeps values of different sizes on one baseline row. */
+  line-height: 1.35rem;
+  font-size: 1.05rem;
+  color: #e2e8f0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hs-stat-small {
+  font-size: 0.92rem;
+  color: #a5f3fc;
+}
+
+.hs-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: var(--board);
+}
+
+.hs-meter {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  overflow: hidden;
+}
+
+.hs-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--hs-cyan), var(--hs-good));
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.55);
+  transition: width 220ms ease;
+}
+
+.hs-status-text {
+  min-height: 2.5em;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: center;
+  color: rgba(203, 213, 225, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hs-status-text.is-good {
+  color: #6ee7b7;
+}
+
+.hs-status-text.is-warn {
+  color: var(--hs-warn);
+}
+
+.hs-status-text.is-bad {
+  color: var(--hs-danger);
+}
+
+/* ---- board ---- */
+
+.hs-board {
+  position: relative;
+  width: var(--board);
+  height: var(--board);
+  flex: none;
+  border-radius: 0.9rem;
+  box-shadow:
+    0 0 0 1px rgba(2, 6, 23, 0.9),
+    0 0 46px rgba(34, 211, 238, 0.1);
+  /* The board owns every gesture on it: no scrolling, zooming, text
+     selection or touch callouts while dragging bridges. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hs-board.is-shake-a {
+  animation: hs-shake-a 340ms ease-in-out;
+}
+
+.hs-board.is-shake-b {
+  animation: hs-shake-b 340ms ease-in-out;
+}
+
+.hs-board.is-won {
+  box-shadow:
+    0 0 0 1px rgba(52, 211, 153, 0.35),
+    0 0 56px rgba(52, 211, 153, 0.22);
+}
+
+.hs-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  cursor: default;
+}
+
+.hs-water {
+  fill: rgba(2, 6, 23, 0.72);
+  stroke: rgba(34, 211, 238, 0.16);
+  stroke-width: 0.03;
+}
+
+.hs-board.is-won .hs-water {
+  stroke: rgba(52, 211, 153, 0.45);
+}
+
+.hs-dots circle {
+  fill: rgba(148, 163, 184, 0.3);
+}
+
+.hs-guides line {
+  stroke: rgba(192, 132, 252, 0.6);
+  stroke-width: 0.045;
+  stroke-dasharray: 0.12 0.11;
+  stroke-linecap: round;
+}
+
+.hs-bridge-glow {
+  stroke: rgba(34, 211, 238, 0.26);
+  stroke-width: 0.2;
+  stroke-linecap: round;
+}
+
+.hs-bridge-core {
+  stroke: #a5f3fc;
+  stroke-width: 0.075;
+  stroke-linecap: round;
+}
+
+.hs-board.is-won .hs-bridge-glow {
+  stroke: rgba(52, 211, 153, 0.3);
+}
+
+.hs-board.is-won .hs-bridge-core {
+  stroke: #a7f3d0;
+}
+
+.hs-island {
+  cursor: pointer;
+}
+
+.hs-disc {
+  fill: #0a1124;
+  stroke: var(--hs-cyan);
+  stroke-width: 0.06;
+  transition:
+    fill 160ms ease,
+    stroke 160ms ease;
+}
+
+.hs-num {
+  fill: #e2e8f0;
+  font-family: inherit;
+  pointer-events: none;
+}
+
+.hs-island:hover .hs-disc {
+  stroke: #a5f3fc;
+}
+
+.hs-island.is-done .hs-disc {
+  fill: #0d3a31;
+  stroke: var(--hs-good);
+}
+
+.hs-island.is-done .hs-num {
+  fill: #d1fae5;
+}
+
+.hs-island.is-over .hs-disc {
+  fill: #4a1020;
+  stroke: var(--hs-danger);
+}
+
+.hs-island.is-over .hs-num {
+  fill: #fecdd3;
+}
+
+.hs-island.is-selected .hs-disc {
+  stroke: var(--hs-pink);
+}
+
+.hs-sel-ring {
+  fill: none;
+  stroke: var(--hs-pink);
+  stroke-width: 0.055;
+  animation: hs-pulse 1.3s ease-in-out infinite;
+}
+
+.hs-partner-ring {
+  fill: none;
+  stroke: rgba(192, 132, 252, 0.9);
+  stroke-width: 0.045;
+  stroke-dasharray: 0.1 0.075;
+}
+
+.hs-island.is-target .hs-disc {
+  stroke: var(--hs-pink);
+  fill: #2a1440;
+}
+
+.hs-island.is-target-blocked .hs-disc,
+.hs-island.is-target-none .hs-disc,
+.hs-island.is-nolink .hs-disc {
+  stroke: var(--hs-danger);
+}
+
+.hs-island.is-target-remove .hs-disc {
+  stroke: #94a3b8;
+}
+
+.hs-halo {
+  pointer-events: none;
+}
+
+.hs-preview line {
+  stroke-width: 0.085;
+  stroke-dasharray: 0.15 0.1;
+  stroke-linecap: round;
+}
+
+.hs-preview.is-add line {
+  stroke: var(--hs-pink);
+}
+
+.hs-preview.is-remove line {
+  stroke: rgba(148, 163, 184, 0.85);
+}
+
+.hs-preview.is-blocked line {
+  stroke: var(--hs-danger);
+}
+
+.hs-ghost line {
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.hs-ghost.is-reject line {
+  stroke: var(--hs-danger);
+  stroke-width: 0.09;
+  stroke-dasharray: 0.15 0.1;
+  animation: hs-fade 1100ms ease-out forwards;
+}
+
+.hs-ghost.is-reject line.hs-ghost-blocker {
+  stroke-width: 0.2;
+  stroke-dasharray: none;
+  stroke-opacity: 0.55;
+}
+
+.hs-ghost.is-wrong line {
+  stroke: var(--hs-danger);
+  stroke-width: 0.11;
+  animation: hs-fade 1600ms ease-out forwards;
+}
+
+.hs-ghost.is-hint line {
+  stroke: var(--hs-pink);
+  stroke-width: 0.3;
+  stroke-opacity: 0.55;
+  animation: hs-fade 1800ms ease-out forwards;
+}
+
+/* ---- controls ---- */
+
+.hs-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  width: 100%;
+  max-width: var(--board);
+}
+
+.hs-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  padding: 0.5rem 0.15rem;
+  background: rgba(2, 6, 23, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.55rem;
+  color: #e2e8f0;
+  font-size: clamp(0.62rem, 2.7vw, 0.74rem);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    transform 90ms ease;
+}
+
+.hs-btn:hover {
+  border-color: rgba(34, 211, 238, 0.5);
+}
+
+.hs-btn:active {
+  transform: scale(0.96);
+}
+
+.hs-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.hs-btn-glyph {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.hs-footer {
+  display: flex;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: var(--board);
+}
+
+/* Two classes deep so these win over the generic .hs-ghost sizing below:
+   four buttons must fit a 360 px phone. */
+.hs-footer > .hs-ghost {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  font-size: clamp(0.7rem, 3.1vw, 0.85rem);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.hs-footer > .hs-ghost.hs-icon-btn {
+  flex: 0 0 auto;
+  padding-left: 0.85rem;
+  padding-right: 0.85rem;
+}
+
+.hs-keys {
+  display: none;
+  max-width: 100%;
+  color: rgba(148, 163, 184, 0.55);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+/* Keyboard help only where a keyboard is likely: a fine pointer and room. */
+@media (hover: hover) and (pointer: fine) and (min-width: 640px) {
+  .hs-app {
+    --chrome: 20.75rem;
+  }
+
+  .hs-keys {
+    display: block;
+  }
+}
+
+/* Phones held sideways: too short for a stacked column, so the board sits on
+   the left at full height and the HUD and controls stack beside it. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .hs-app {
+    --board: clamp(12rem, calc(100svh - 1.5rem), 32rem);
+    max-width: 62rem;
+    padding-top: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .hs-play {
+    display: grid;
+    grid-template-columns: var(--board) minmax(0, 21rem);
+    grid-template-areas:
+      "board hud"
+      "board status"
+      "board actions"
+      "board footer"
+      "board keys";
+    align-content: center;
+    justify-content: center;
+    column-gap: 1.1rem;
+    row-gap: 0.6rem;
+  }
+
+  .hs-play > .hs-board {
+    grid-area: board;
+  }
+
+  .hs-play > .hs-hud {
+    grid-area: hud;
+  }
+
+  .hs-play > .hs-status {
+    grid-area: status;
+  }
+
+  .hs-play > .hs-actions {
+    grid-area: actions;
+  }
+
+  .hs-play > .hs-footer {
+    grid-area: footer;
+  }
+
+  .hs-play > .hs-keys {
+    grid-area: keys;
+  }
+
+  .hs-play > .hs-hud,
+  .hs-play > .hs-status,
+  .hs-play > .hs-actions,
+  .hs-play > .hs-footer {
+    max-width: none;
+  }
+}
+
+/* ---- menu + panels ---- */
+
+.hs-card {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+  padding: clamp(1.1rem, 4vw, 1.75rem);
+  background: rgba(2, 6, 23, 0.66);
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 0.9rem;
+  box-shadow: 0 0 40px rgba(34, 211, 238, 0.08);
+}
+
+.hs-field-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.75);
+  text-align: center;
+}
+
+.hs-level-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.hs-level {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.18rem;
+  min-width: 0;
+  padding: 0.6rem 0.1rem;
+  background: rgba(2, 6, 23, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.6rem;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    transform 90ms ease;
+}
+
+.hs-level:hover {
+  border-color: rgba(34, 211, 238, 0.5);
+}
+
+.hs-level:active {
+  transform: scale(0.96);
+}
+
+.hs-level.is-on {
+  border-color: var(--hs-cyan);
+  background: rgba(34, 211, 238, 0.16);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
+}
+
+.hs-level-name {
+  font-size: clamp(0.78rem, 3.4vw, 0.95rem);
+  color: #f0fdff;
+}
+
+.hs-level.is-on .hs-level-name {
+  color: #a5f3fc;
+}
+
+.hs-level-meta {
+  font-size: 0.64rem;
+  color: rgba(148, 163, 184, 0.8);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hs-primary {
+  padding: 0.85rem 1rem;
+  background: linear-gradient(120deg, rgba(34, 211, 238, 0.9), rgba(168, 85, 247, 0.9));
+  border: none;
+  border-radius: 0.65rem;
+  color: #04121a;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.25);
+  transition:
+    transform 90ms ease,
+    filter 120ms ease;
+}
+
+.hs-primary:hover {
+  filter: brightness(1.08);
+}
+
+.hs-primary:active {
+  transform: scale(0.97);
+}
+
+.hs-primary:disabled {
+  cursor: progress;
+  filter: saturate(0.6) brightness(0.85);
+}
+
+.hs-ghost {
+  padding: 0.7rem 0.6rem;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 0.6rem;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    transform 90ms ease;
+}
+
+.hs-ghost:hover {
+  border-color: rgba(34, 211, 238, 0.5);
+}
+
+.hs-ghost:active {
+  transform: scale(0.97);
+}
+
+.hs-ghost:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.hs-menu-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hs-menu-row > * {
+  flex: 1 1 0;
+}
+
+.hs-best-grid,
+.hs-win-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.hs-win-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hs-best {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.45rem 0.2rem;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 0.5rem;
+  background: rgba(2, 6, 23, 0.4);
+}
+
+.hs-best.is-on {
+  border-color: rgba(34, 211, 238, 0.35);
+}
+
+.hs-best-name {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.hs-best-time {
+  font-size: 0.82rem;
+  color: #a5f3fc;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(4, 2, 12, 0.78);
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+
+.hs-dialog {
+  width: 100%;
+  max-width: 26rem;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: clamp(1.2rem, 5vw, 1.9rem);
+  background: rgba(6, 8, 22, 0.96);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 0.9rem;
+  box-shadow: 0 0 50px rgba(34, 211, 238, 0.14);
+  animation: hs-rise 260ms ease-out both;
+}
+
+.hs-dialog-title {
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f0fdff;
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+}
+
+.hs-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.hs-rules b {
+  color: #a5f3fc;
+  font-weight: 400;
+}
+
+.hs-record {
+  align-self: center;
+  padding: 0.25rem 0.8rem;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  border-radius: 999px;
+  color: var(--hs-good);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+  animation: hs-pop 520ms ease-out both;
+}
+
+.hs-win-time {
+  font-size: 2.2rem;
+  color: var(--hs-good);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 16px rgba(52, 211, 153, 0.5);
+  animation: hs-pop 420ms ease-out both;
+}
+
+.hs-win-note {
+  text-align: center;
+  color: rgba(148, 163, 184, 0.9);
+  font-size: 0.85rem;
+}
+
+@keyframes hs-shake-a {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  45% {
+    transform: translateX(5px);
+  }
+  70% {
+    transform: translateX(-3px);
+  }
+}
+
+/* An identical twin, so alternating names restarts the shake each time. */
+@keyframes hs-shake-b {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  45% {
+    transform: translateX(5px);
+  }
+  70% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes hs-pulse {
+  0%,
+  100% {
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+
+@keyframes hs-fade {
+  0%,
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes hs-rise {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes hs-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Without motion the one-shot highlights would vanish at once; hold them
+     steady instead — they unmount when the notice beside them retires. */
+  .hs-ghost line {
+    animation: none !important;
+  }
+
+  .hs-ghost.is-reject line,
+  .hs-ghost.is-wrong line,
+  .hs-ghost.is-hint line {
+    opacity: 0.7;
+  }
+}
